@@ -3,6 +3,29 @@
 Project Proposal: WeCare.com provides a platform for Caregivers and Elderly to collaborate and help the
 Elderly during times of need.
 
+Actors in the System:
+1. Elderly User
+2. Caregiver User
+3. Sysadmin User
+
+Basic Process Flow:
+-- ELDERLY
+1. Elderly create thier profile and register themselves by providing information like zipcode, SSN, secret pin and Name.
+2. Elderly can search the database of caregivers and the exact match to their location is displayed by the program.
+3. Elderly can book the services of an "Active" caregiver, the caregiver should not have "Booked" status.
+4. Elderly can terminate / deactivate the caregiver reasons (for any reason, either completion of the service or unexpected change of event).
+5. Once Elderly deactivates the service, the caregiver is "Active" again, and is available for anyone to book/reserve services.
+
+--CAREGIVER
+1. Caregiver create thier profile and register themselves by providing information like zipcode, SSN, secret pin and Name.
+2. SSN is validated for correctness. Due to limited scope of this project, the number of digits in SSN is validated to be 9-digit number. If SSN is valid, the Background check
+    status is "Cleared"
+    If SSN is invalid (not 9-digit number), the Background check status is "Rejected".
+3. Once Elderly books a service of a caregiver, the caregiver status changes to "Booked"
+4. "Booked" caregivers are not visible in the search results.
+5. Once Elderly deactivates the service, the caregiver status changes to "Active". Currently this is unidirectional. 
+
+
 Basic Process Automation:
 1. Elderly registers in the system as "Elderly"
 2. Caregivers register in the system under category "Caregiver"
@@ -14,6 +37,13 @@ at the schedules.
 7. After the period of service, the Caregiver status is changed to "Available"
 8. After the period of service, the Elderly status is changed to "Looking" or "Served"
 9. Rating system is in place for both Caregiver and Elderly. 
+
+
+Assumptions:
+1. SSN is deemed to be valid if it is a 9-digit number.
+2. Pin code exact match is currently considered to be feasible to match caregivers with Elderly.
+3. No database is used, and hence no data will be persisted.
+4. Rating system to be implemented yet.
 
 Student Name and ID: Sweta Shah, 87336
 Faculty: Professor. Dr. Srinivasan Mandayam
@@ -81,7 +111,7 @@ class Elderly(User):
     def search_caregiver__(self):
         matchingCaregivers = []
         for caretaker in caregiverUsers:
-            if caregiverUsers[caretaker][1] == self._zipcode and caregiverUsers[caretaker][1] != "Booked":
+            if caregiverUsers[caretaker][1] == self._zipcode and caregiverUsers[caretaker][2] != "Booked":
                 matchingCaregivers.append(caregiverUsers[caretaker])
 
         if len(matchingCaregivers) > 0:
@@ -134,9 +164,41 @@ class Elderly(User):
         
     def deactivateService(self):
          if self._status == "Being Served":
+            caregiverID = input("Enter the Caregiver unique ID whose service you wish to terminate: ")
+            #self._status = "Served"
+            listOfCaregiversForElderly = self.elderlyUsingCareservices[self]
+            listOfCaregiverToDeactivate = []
+            beforeRemovalLen = len(listOfCaregiversForElderly)
+            for item in listOfCaregiversForElderly:
+                if item._uniqueID == int(caregiverID):
+                    item._status = "Active"
+                    listOfCaregiverToDeactivate.append(item._uniqueID)
+                    listOfCaregiversForElderly.remove(item)
+                    print("Caregiver {}'s services have been deactivated.".format(item._name))
+            
+            afterRemovalLen = len(listOfCaregiversForElderly)
+            if len(listOfCaregiversForElderly) == 0:
+                del self.elderlyUsingCareservices[self]
+                self._status = "Served"
+            elif afterRemovalLen < beforeRemovalLen:
+                self.elderlyUsingCareservices[self] = listOfCaregiversForElderly
 
+            for userObj in listOfUserObjects:
+                for iden in listOfCaregiverToDeactivate:
+                    if userObj._uniqueID == iden:
+                        if userObj._status == "Booked":
+                            userObj._status = "Active"
 
+                            print("Would you like to provide a rating for this Caregiver's services?")
+                            userObj._rating = int(input("Rate between 1 - 5: "))
+                            userObj._reviewText += input("Please enter a line of review: ")
 
+            for caretaker in caregiverUsers:
+                for iden in listOfCaregiverToDeactivate:
+                    if caregiverUsers[caretaker][5] == iden and caregiverUsers[caretaker][2] == "Booked":
+                        caregiverUsers[caretaker][2] = "Active"
+
+                        
     def printMenu(self):
         exitElderlyPortal = False
         
@@ -144,7 +206,7 @@ class Elderly(User):
 
                    userInput = input("""
 
-Welcome! Please select the menu option:
+Please select the menu option:
 
 1. Search Caregivers
 2. Book Care Service
@@ -174,20 +236,48 @@ Welcome! Please select the menu option:
                                    print("Caregiver details: ",str(listOfCaretakers))
                        else:
                            print("Sorry, you do not have any booked services yet. Please use option 1 and 2 to book care services.")
-                    elif userInput == '5':
-                        if len(self.elderlyUsingCareservices[self]) <= 0 and self._status != "Being Served":
-                            print("You cannot deactivate services as there are no services scheduled for you currently. Please check your booking details.")
-                        else:
-                            self.deactivateService()
+                   elif userInput == '5':
+                       isSelfInDict = self in self.elderlyUsingCareservices.keys()
+                       if not isSelfInDict and self._status != "Being Served":
+                           print("You cannot deactivate services as there are no services scheduled for you currently. Please check your booking details.")
+                       else:
+                           self.deactivateService()
                             
 ### CAREGIVER class ###
 class Caregiver(User):
     def __init__(self,name,uniqueID,zipcode,ssn,userType,pin,status="Active"):
         User.__init__(self,name,uniqueID,zipcode,ssn,userType,pin,status)
+        self._rating = 0
+        self._reviewText = "No Rating has been entered yet."
 
     def __str__(self):
         return User.__str__(self)
 
+    def checkRatingAndReviews(self):
+        print("Rating = "+str(self._rating))
+        print("~~~~ REVIEWS ~~~~~")
+        print(self._reviewText)
+        
+    def printMenu(self):
+        exitCaregiverPortal = False
+        while exitCaregiverPortal != True:
+            userInput = input("""
+
+Please select the menu option:
+
+1. Check My Booked Services
+2. View My Reviews anf Ratings
+3. Logout of Portal
+
+
+""")
+            if userInput == '1':
+                print("Implementation in progress....")
+            elif userInput == '2':
+                self.checkRatingAndReviews()
+            elif userInput == '3':
+                exitCaregiverPortal = True
+        
 #### MAIN METHOD ####  
 # Display the initial menu: Register a user as Caregiver or Elderly.
 
@@ -267,10 +357,12 @@ while exitIndicator != True:
         print(elderlyPortalMenu)
         name = input("Name: ")
         pin = input("Pin: ")
+        loginDueToPinFail = True
         for userObj in listOfUserObjects:
             if userObj._userType == "Elderly":
                 if userObj._name == name and userObj._pin == pin:
                     #c = userObj
+                    loginDueToPinFail = False
                     loginStatus = False
                     if isinstance(userObj, Elderly):
                         print("Login Successful!")
@@ -284,6 +376,43 @@ while exitIndicator != True:
                         loginStatus = True
                     elif loginStatus == False:
                         print("Login Failed! Please check your name and pin and try again...")
+                elif loginDueToPinFail:
+                    print("Login Failed! Please check your name and pin and try again...")
+                    
+        userChoice = '100'
+    elif userChoice == '7':
+        caregiverPortalMenu = """
+
+        *** Welcome to Caregiver Portal ***
+
+        Please enter valid name and pin to login:
+ 
+        """
+        print(caregiverPortalMenu)
+        name = input("Name: ")
+        pin = input("Pin: ")
+        loginDueToPinFail = True
+        for userObj in listOfUserObjects:
+            if userObj._userType == "Caregiver":
+                if userObj._name == name and userObj._pin == pin:
+                    #c = userObj
+                    loginDueToPinFail = False
+                    loginStatus = False
+                    if isinstance(userObj, Caregiver):
+                        print("Login Successful!")
+                        print("~~~~~~ Welcome {}! to the Caregiver Portal.~~~~~~~~".format(userObj._name))
+                        print("{}'s Profile Details".format(userObj._name))
+                        print("Your zipcode is: {} ".format(userObj._zipcode))
+                        print("Your status is: {}".format(userObj._status))
+                        print("Your background check result: {}".format(userObj._backgroundCheckStatus))
+                        loginStatus = True
+                        userObj.printMenu()
+                        loginStatus = True
+                    elif loginStatus == False:
+                        print("Login Failed! Please check your name and pin and try again...")
+                elif loginDueToPinFail:
+                    print("Login Failed! Please check your name and pin and try again...")
+                    
         userChoice = '100'
     else:
         userChoice = input(todaysMenu)

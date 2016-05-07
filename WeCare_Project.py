@@ -50,6 +50,9 @@ Faculty: Professor. Dr. Srinivasan Mandayam
 
 """
 import pickle
+print(__doc__)
+
+# Global variables shared by all instances of classes defined below. 
 caregiverUsers = {}
 elderlyUsers = {}
 listOfUserObjects = []
@@ -277,13 +280,20 @@ Please select the menu option:
                 self.checkRatingAndReviews()
             elif userInput == '3':
                 exitCaregiverPortal = True
-        
+
 #### MAIN METHOD ####  
 # Display the initial menu: Register a user as Caregiver or Elderly.
 
 todaysMenu = """
 
-Welcome to WeCare.com portal. Please select one of the following actions:
+Welcome to WeCare.com portal.
+
+Note:
+a) As this is first run of the program, there are no Caregivers currently registered in the system.
+b) Please register a couple of caregivers to book caregiver services, when you register as Elderly.
+
+
+Please select one of the following actions:
 
 1. Register a user under "Elderly" category
 2. Register a user under "Caregiver" category
@@ -303,8 +313,8 @@ while exitIndicator != True:
         name = input("Name: ")
         zipcode = input("Zipcode: ")
         #status = input("Status ('Served','Not Served', 'Being Served'): ")
-        ssn = input("SSN number: ")
-        pin = input("PIN Number: ")
+        ssn = input("SSN number (Optional): ")
+        pin = input("PIN Number (Please note your pin, will be required for login): ")
         elderly = Elderly(name,random.randint(100,1000),zipcode,ssn,"Elderly", pin)
         print(elderly)
         listOfUserObjects.append(elderly)
@@ -314,8 +324,11 @@ while exitIndicator != True:
         name = input("Name: ")
         zipcode = input("Zipcode: ")
         #status = input("Status ('Booked','Active', 'Inactive'): ")
-        ssn = input("SSN number: ")
-        pin = input("PIN Number: ")
+        ssn = input("SSN number (Required for verification, please enter valid 9-digit SSN): ")
+        while ssn == "" or len(ssn) != 9:
+            print("Either you did not enter ssn or a 9-digit number was not specified.")
+            ssn = input("SSN number (Required for verification, please enter valid 9-digit SSN): ")
+        pin = input("PIN Number (Please note your pin, will be required for login): ")
         caregiver = Caregiver(name,random.randint(100,1000),zipcode,ssn,"Caregiver", pin)
         print(caregiver)
         listOfUserObjects.append(caregiver)

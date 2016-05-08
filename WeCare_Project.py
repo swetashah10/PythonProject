@@ -56,7 +56,8 @@ print(__doc__)
 caregiverUsers = {}
 elderlyUsers = {}
 listOfUserObjects = []
-
+countForOption4 = 1
+countForOption5 = 1
 # Defining classes for different entities:
 
 ### USER class ###
@@ -97,7 +98,7 @@ class Elderly(User):
         self.elderlyUsingCareservices = {}
  
     def __str__(self):
-        return User.__str__(self)
+        return "User Details: Unique ID: {} --- Name: {} --- Zipcode: {} --- Status: {} ".format(str(self._uniqueID),self._name,self._zipcode,self._status)
 
     def hasMatchingCaregivers(self):
         matchingCaregivers = []
@@ -110,7 +111,6 @@ class Elderly(User):
         else:
             return False
         
-    #@classmethod          
     def search_caregiver__(self):
         matchingCaregivers = []
         for caretaker in caregiverUsers:
@@ -124,7 +124,7 @@ class Elderly(User):
             print("Name \t\t Status \t Background Check\tUnique ID")
             print("-------------------------------------------------------------------------------------------")
             for caregiver in matchingCaregivers:
-                print(caregiver[0],"\t\t",caregiver[2],"\t",caregiver[4],"\t\t",caregiver[5])
+                print(caregiver[0],"\t",caregiver[2],"\t",caregiver[4],"\t\t",caregiver[5])
                 print("")
         else:
             print("No match found...!")
@@ -178,6 +178,7 @@ class Elderly(User):
                     listOfCaregiverToDeactivate.append(item._uniqueID)
                     listOfCaregiversForElderly.remove(item)
                     print("Caregiver {}'s services have been deactivated.".format(item._name))
+                    
             
             afterRemovalLen = len(listOfCaregiversForElderly)
             if len(listOfCaregiversForElderly) == 0:
@@ -187,14 +188,20 @@ class Elderly(User):
                 self.elderlyUsingCareservices[self] = listOfCaregiversForElderly
 
             for userObj in listOfUserObjects:
+                print("Inside for loop priting userObj: ",str(userObj))
                 for iden in listOfCaregiverToDeactivate:
+                    print("Inside for loop, printing iden value: ",iden)
                     if userObj._uniqueID == iden:
-                        if userObj._status == "Booked":
-                            userObj._status = "Active"
-
-                            print("Would you like to provide a rating for this Caregiver's services?")
-                            userObj._rating = int(input("Rate between 1 - 5: "))
-                            userObj._reviewText += input("Please enter a line of review: ")
+                        print("Inside IF, changing status from Booked to Active, initial status = ",userObj._status)
+                        userObj._status = "Active"
+                        print("Would you like to provide a rating for this Caregiver's services?")
+                        rate = int(input("Rate between 1 - 5: "))
+                        userObj._ratingList.append(rate)
+                        review = input("Please enter a line of review: ")
+                        if self._name in userObj._reviewText:
+                            review += userObj._reviewText[self._name]
+                        userObj._reviewText[self._name] = review
+                        
 
             for caretaker in caregiverUsers:
                 for iden in listOfCaregiverToDeactivate:
@@ -245,19 +252,27 @@ Please select the menu option:
                            print("You cannot deactivate services as there are no services scheduled for you currently. Please check your booking details.")
                        else:
                            self.deactivateService()
+                        
                             
 ### CAREGIVER class ###
 class Caregiver(User):
     def __init__(self,name,uniqueID,zipcode,ssn,userType,pin,status="Active"):
         User.__init__(self,name,uniqueID,zipcode,ssn,userType,pin,status)
-        self._rating = 0
-        self._reviewText = "No Rating has been entered yet."
+        self._ratingList = []
+        self._reviewText = {}
 
     def __str__(self):
         return User.__str__(self)
 
     def checkRatingAndReviews(self):
-        print("Rating = "+str(self._rating))
+        avg = 0
+        sumOfRate = 0
+        for rate in self._ratingList:
+            sumOfRate += rate
+        if len(self._ratingList) != 0:
+            avg = sumOfRate // len(self._ratingList)
+            
+        print("Rating = "+str(avg))
         print("~~~~ REVIEWS ~~~~~")
         print(self._reviewText)
         
@@ -308,57 +323,147 @@ import random
 userChoice = input(todaysMenu)
 exitIndicator = False
 while exitIndicator != True:
+    isFirstRunForOption4 = countForOption4
+    isFirstRunForOption5 = countForOption5
     if userChoice == '1':
         print("You chose to register an Elderly user. Please enter the details below:")
-        name = input("Name: ")
+        name = input("Name (Username): ")
+        while len(name) == 0:
+            print("Name aka username was not entered. Please enter a Name: ")
+            name = input("Name (Username): ")
         zipcode = input("Zipcode: ")
-        #status = input("Status ('Served','Not Served', 'Being Served'): ")
+        while not isinstance( zipcode, int ) and len(zipcode) != 5:
+            print("Either zipcode entered in invalid number or length is not equal to 5. Please enter a valid 5-digit zipcode.")
+            zipcode = input("Zipcode: ")
         ssn = input("SSN number (Optional): ")
+
+        # Wanted to mask the pin here. However on using getpass module, the pin is not being echoed in terminal
+        # or command line. It is being echoed with a warning message in IDLE window. Hence skipping using
+        # getpass module, and masking of the pin altogether, as IDLE is what we have used in class so far.
+        # Assuming IDLE will be used while testing this application. 
         pin = input("PIN Number (Please note your pin, will be required for login): ")
+        while pin == "" or len(pin) == 0:
+            print("Pin was not entered. Please enter a pin value.")
+            pin = input("PIN Number (Please note your pin, will be required for login): ")
+            
         elderly = Elderly(name,random.randint(100,1000),zipcode,ssn,"Elderly", pin)
         print(elderly)
         listOfUserObjects.append(elderly)
         userChoice = '100'
+        
     elif userChoice == '2':
         print("You chose to register a Caregiver user. Please enter the details below: ")
         name = input("Name: ")
+        while len(name) == 0:
+            print("Name aka username was not entered. Please enter a Name: ")
+            name = input("Name (Username): ")
         zipcode = input("Zipcode: ")
-        #status = input("Status ('Booked','Active', 'Inactive'): ")
+        while not isinstance( zipcode, int ) and len(zipcode) != 5:
+            print("Either zipcode entered in invalid number or length is not equal to 5. Please enter a valid 5-digit zipcode.")
+            zipcode = input("Zipcode: ")
         ssn = input("SSN number (Required for verification, please enter valid 9-digit SSN): ")
         while ssn == "" or len(ssn) != 9:
             print("Either you did not enter ssn or a 9-digit number was not specified.")
             ssn = input("SSN number (Required for verification, please enter valid 9-digit SSN): ")
+
+        # Wanted to mask the pin here. However on using getpass module, the pin is not being echoed in terminal
+        # or command line. It is being echoed with a warning message in IDLE window. Hence skipping using
+        # getpass module, and masking of the pin altogether, as IDLE is what we have used in class so far.
+        # Assuming IDLE will be used while testing this application. 
         pin = input("PIN Number (Please note your pin, will be required for login): ")
+        while pin == "" or len(pin) == 0:
+            print("Pin was not entered. Please enter a pin value.")
+            pin = input("PIN Number (Please note your pin, will be required for login): ")
         caregiver = Caregiver(name,random.randint(100,1000),zipcode,ssn,"Caregiver", pin)
         print(caregiver)
         listOfUserObjects.append(caregiver)
         userChoice = '100'
+        
     elif userChoice == '3':
+        print("Saving the program object state....")
+        try:
+            elderlyFileObject = open("ElderlyObjects.p",'wb')
+            caregiverFileObject = open("CaregiverObjects.p",'wb')
+            for obj in listOfUserObjects:
+                if obj._userType == "Elderly":
+                    pickle.dump(obj, elderlyFileObject)
+                elif obj._userType == "Caregiver":
+                    pickle.dump(obj, caregiverFileObject)
+
+            elderlyFileObject.close()
+            caregiverFileObject.close()
+            print("Please refer files: ElderlyObjects.p, CaregiverObjects.p for saved information.")
+        except:
+            print("Some exception occurred while saving the data.")
         print("Thank you for using WeCare.com. See you soon! Take Care!")
         exitIndicator = True
+        
     elif userChoice == '4':
         found = False
-        #caregivers = pickle.load(open("caregiverUsers.p","rb"))
-        #print(caregivers)
+        
+        # Load the objects in the program, only during first run of the program.
+        print("isFirstRunForOption4: ",isFirstRunForOption4)
+        if isFirstRunForOption4 == 1:
+            i = 1
+            try:
+                fileObj = open("CaregiverObjects.p","rb")
+                while i:
+                    try:
+                        listOfUserObjects.append(pickle.load(fileObj))
+                    except EOFError:
+                        fileObj.close()
+                        i=0
+                        break;
+            except IOError as e:
+                print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            except:
+                print("Unexpected error:", sys.exc_info()[1]) 
+
         for userObj in listOfUserObjects:
             if userObj._userType == "Caregiver":
                 found = True
                 print(str(userObj))
+                caregiverUsers[userObj._uniqueID] = [userObj._name,userObj._zipcode, userObj._status, userObj._ssn, userObj._backgroundCheckStatus,userObj._uniqueID]
+
         if found==False:
             print("No Caregivers registered in system yet. ")
+        countForOption4 += 1
         userChoice = '100'
+        
     elif userChoice == '5':
         found = False
-        #elderly = pickle.load(open("elderlyUsers.p","rb"))
+
+        # Load the objects in the program, only during first run of the program.
+        print("isFirstRunForOption5: ",isFirstRunForOption5)
+        if isFirstRunForOption5 == 1:
+            i =1
+            try:
+                fileObj2 = open("ElderlyObjects.p","rb")
+                while i:
+                    try:
+                        listOfUserObjects.append(pickle.load(fileObj2))
+                    except EOFError:
+                        fileObj2.close()
+                        i=0
+                        break;
+            except IOError as e:
+                print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            except:
+                print("Unexpected error:", sys.exc_info()[1])
+        
         #print(elderly)
         for userObj in listOfUserObjects:
             if userObj._userType == "Elderly":
                 found = True
                 print(str(userObj))
+                elderlyUsers[userObj._uniqueID] = [userObj._name,userObj._zipcode,  userObj._status, userObj._ssn, userObj._backgroundCheckStatus,userObj._uniqueID]
+
 
         if found == False:
             print("No Elderly users registered in the system yet.")
+        countForOption5 += 1
         userChoice = '100'
+        
     elif userChoice == '6':
         elderlyPortalMenu = """
 
@@ -374,7 +479,6 @@ while exitIndicator != True:
         for userObj in listOfUserObjects:
             if userObj._userType == "Elderly":
                 if userObj._name == name and userObj._pin == pin:
-                    #c = userObj
                     loginDueToPinFail = False
                     loginStatus = False
                     if isinstance(userObj, Elderly):
@@ -383,7 +487,6 @@ while exitIndicator != True:
                         print("{}'s Profile Details".format(userObj._name))
                         print("Your zipcode is: {} ".format(userObj._zipcode))
                         print("Your status is: {}".format(userObj._status))
-                        print("Your background check result: {}".format(userObj._backgroundCheckStatus))
                         loginStatus = True
                         userObj.printMenu()
                         loginStatus = True
@@ -408,7 +511,6 @@ while exitIndicator != True:
         for userObj in listOfUserObjects:
             if userObj._userType == "Caregiver":
                 if userObj._name == name and userObj._pin == pin:
-                    #c = userObj
                     loginDueToPinFail = False
                     loginStatus = False
                     if isinstance(userObj, Caregiver):

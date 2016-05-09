@@ -27,7 +27,6 @@ Basic Process Flow:
 4. "Booked" caregivers are not visible in the search results.
 5. Once Elderly deactivates the service, the caregiver status changes to "Active". Currently this is unidirectional. 
 
-
 Basic Process Automation:
 1. Elderly registers in the system as "Elderly"
 2. Caregivers register in the system under category "Caregiver"
@@ -40,12 +39,10 @@ at the schedules.
 8. After the period of service, the Elderly status is changed to "Looking" or "Served"
 9. Rating system is in place for both Caregiver and Elderly. 
 
-
 Assumptions:
 1. SSN is deemed to be valid if it is a 9-digit number.
-2. Pin code exact match is currently considered to be feasible to match caregivers with Elderly.
+2. Zip code exact match is currently considered to be feasible to match caregivers with Elderly.
 3. No database is used, and hence no data will be persisted, however pickling is used.
-4. Rating system to be implemented yet.
 
 TECHNICAL CONSIDERATIONS - IMPORTANT:
 1. This program is compatible with Python 3.5.1 version, and IS NOT compatible with earlier versions of Python.
